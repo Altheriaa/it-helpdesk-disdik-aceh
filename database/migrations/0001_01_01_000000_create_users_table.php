@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('phone')->nullable()->comment('Format 628xxx untuk Fonnte WA');
+            $table->string('nip')->nullable()->unique()->comment('Nomor Induk Pegawai');
             $table->rememberToken();
             $table->timestamps();
         });

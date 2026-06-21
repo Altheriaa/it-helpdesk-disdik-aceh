@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Reply;
+use App\Models\Ticket;
+use App\Observers\ReplyObserver;
+use App\Observers\TicketObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Ticket::observe(TicketObserver::class);
+        Reply::observe(ReplyObserver::class);
     }
 }
