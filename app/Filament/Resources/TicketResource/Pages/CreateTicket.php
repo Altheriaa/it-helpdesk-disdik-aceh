@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TicketResource\Pages;
 use App\Filament\Resources\TicketResource;
 use App\Models\File;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Storage;
 
 class CreateTicket extends CreateRecord
 {
@@ -27,7 +28,7 @@ class CreateTicket extends CreateRecord
                 'ticket_id' => $this->record->id,
                 'file_path' => $path,
                 'file_name' => basename($path),
-                'file_size' => 0,
+                'file_size' => Storage::disk('public')->size($path),
             ]);
         }
     }

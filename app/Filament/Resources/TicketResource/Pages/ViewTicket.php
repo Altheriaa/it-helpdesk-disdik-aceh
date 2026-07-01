@@ -152,7 +152,7 @@ class ViewTicket extends ViewRecord
 
                     $this->refreshFormData(['replies']);
                 })
-                ->visible(fn () => ! in_array($this->record->status, ['closed'])),
+                ->visible(fn () => ! in_array($this->record->status, ['resolved', 'closed'])),
         ];
     }
 }

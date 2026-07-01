@@ -25,7 +25,7 @@ class TicketPolicy
         }
 
         if ($user->hasRole('it_support')) {
-            return $ticket->support_id === $user->support?->id;
+            return $ticket->support_id === null || $ticket->support_id === $user->support?->id;
         }
 
         if ($user->hasRole('pegawai')) {
@@ -40,7 +40,7 @@ class TicketPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'pegawai']);
+        return $user->hasAnyRole(['admin', 'it_support', 'pegawai']);
     }
 
     /**
@@ -53,7 +53,11 @@ class TicketPolicy
         }
 
         if ($user->hasRole('it_support')) {
-            return $ticket->support_id === $user->support?->id;
+            return $ticket->support_id === null || $ticket->support_id === $user->support?->id;
+        }
+
+        if ($user->hasRole('pegawai')) {
+            return $ticket->client_id === $user->client?->id && $ticket->status === 'open';
         }
 
         return false;

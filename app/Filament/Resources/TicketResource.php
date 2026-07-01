@@ -37,6 +37,7 @@ class TicketResource extends Resource
         $user = auth()->user();
         $isAdmin = $user?->hasRole('admin');
         $isPegawai = $user?->hasRole('pegawai');
+        $isItSupport = $user?->hasRole('it_support');
 
         return $schema
             ->schema([
@@ -49,7 +50,7 @@ class TicketResource extends Resource
                             ->searchable(['id'])
                             ->preload()
                             ->required()
-                            ->visible($isAdmin)
+                            ->visible($isAdmin || $isItSupport)
                             ->default(fn () => $isPegawai ? $user?->client?->id : null),
 
                         Forms\Components\Hidden::make('client_id')
@@ -70,23 +71,35 @@ class TicketResource extends Resource
 
                         Forms\Components\Select::make('priority')
                             ->label('Prioritas')
-                            ->options([
-                                'low' => 'Rendah',
-                                'medium' => 'Sedang',
-                                'high' => 'Tinggi',
-                                'critical' => 'Kritis',
-                            ])
+                            ->options(fn () => $isPegawai
+                                ? ['low' => 'Rendah', 'medium' => 'Sedang']
+                                : ['low' => 'Rendah', 'medium' => 'Sedang', 'high' => 'Tinggi', 'critical' => 'Kritis']
+                            )
                             ->default('medium')
                             ->required(),
 
                         Forms\Components\Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'open' => 'Open',
-                                'in_progress' => 'In Progress',
-                                'resolved' => 'Resolved',
-                                'closed' => 'Closed',
-                            ])
+                            ->options(function (?Ticket $record) {
+                                if (! $record) {
+                                    return ['open' => 'Open'];
+                                }
+                                $status = $record->status;
+                                if ($status === 'open') {
+                                    return ['open' => 'Open', 'in_progress' => 'In Progress', 'closed' => 'Closed (Batal)'];
+                                }
+                                if ($status === 'in_progress') {
+                                    return ['in_progress' => 'In Progress', 'resolved' => 'Resolved'];
+                                }
+                                if ($status === 'resolved') {
+                                    return ['resolved' => 'Resolved', 'closed' => 'Closed', 'in_progress' => 'In Progress (Re-open)'];
+                                }
+                                if ($status === 'closed') {
+                                    return ['closed' => 'Closed'];
+                                }
+
+                                return ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed'];
+                            })
                             ->default('open')
                             ->required()
                             ->visible(fn (?Ticket $record) => $record !== null),
@@ -98,7 +111,7 @@ class TicketResource extends Resource
                             ->searchable(['id'])
                             ->preload()
                             ->nullable()
-                            ->visible($isAdmin),
+                            ->visible($isAdmin || $isItSupport),
                     ])->columns(2),
 
                 Section::make('Lampiran')
@@ -248,7 +261,10 @@ class TicketResource extends Resource
         }
 
         if ($user?->hasRole('it_support')) {
-            return $query->where('support_id', $user->support?->id);
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('support_id', $user->support?->id)
+                    ->orWhereNull('support_id');
+            });
         }
 
         if ($user?->hasRole('pegawai')) {
@@ -265,7 +281,10 @@ class TicketResource extends Resource
         if ($user?->hasRole('admin')) {
             $count = Ticket::where('status', 'open')->count();
         } elseif ($user?->hasRole('it_support')) {
-            $count = Ticket::where('support_id', $user->support?->id)
+            $count = Ticket::where(function (Builder $q) use ($user) {
+                $q->where('support_id', $user->support?->id)
+                    ->orWhereNull('support_id');
+            })
                 ->whereIn('status', ['open', 'in_progress'])
                 ->count();
         } else {
