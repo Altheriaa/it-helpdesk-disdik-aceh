@@ -77,6 +77,7 @@ class ReportPage extends Page implements HasForms, HasTable
                                 'in_progress' => 'In Progress',
                                 'resolved' => 'Resolved',
                                 'closed' => 'Closed',
+                                'cancelled' => 'Cancelled',
                             ])
                             ->nullable(),
 
@@ -128,11 +129,13 @@ class ReportPage extends Page implements HasForms, HasTable
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         'open' => 'Open', 'in_progress' => 'In Progress',
                         'resolved' => 'Resolved', 'closed' => 'Closed',
+                        'cancelled' => 'Cancelled',
                         default => $state,
                     })
                     ->color(fn (string $state) => match ($state) {
                         'open' => 'gray', 'in_progress' => 'warning',
                         'resolved' => 'success', 'closed' => 'danger',
+                        'cancelled' => 'danger',
                         default => 'gray',
                     }),
 

@@ -47,10 +47,10 @@ class TicketResource extends Resource
                             ->label('Pegawai')
                             ->relationship('client', 'id')
                             ->getOptionLabelFromRecordUsing(fn (Client $record) => $record->user->name.' — '.$record->division->name)
-                            ->searchable(['id'])
+                            ->searchable()
                             ->preload()
                             ->required()
-                            ->visible($isAdmin || $isItSupport)
+                            ->visible($isAdmin)
                             ->default(fn () => $isPegawai ? $user?->client?->id : null),
 
                         Forms\Components\Hidden::make('client_id')
@@ -80,13 +80,24 @@ class TicketResource extends Resource
 
                         Forms\Components\Select::make('status')
                             ->label('Status')
-                            ->options(function (?Ticket $record) {
+                            ->options(function (?Ticket $record) use ($isPegawai) {
                                 if (! $record) {
                                     return ['open' => 'Open'];
                                 }
                                 $status = $record->status;
+
+                                // Pegawai hanya bisa batalkan tiket open
+                                if ($isPegawai) {
+                                    if ($status === 'open') {
+                                        return ['open' => 'Open', 'cancelled' => 'Batalkan Tiket'];
+                                    }
+
+                                    return [$status => ucfirst(str_replace('_', ' ', $status))];
+                                }
+
+                                // IT Support & Admin — workflow transitions
                                 if ($status === 'open') {
-                                    return ['open' => 'Open', 'in_progress' => 'In Progress', 'closed' => 'Closed (Batal)'];
+                                    return ['open' => 'Open', 'in_progress' => 'In Progress', 'cancelled' => 'Cancelled (Batal)'];
                                 }
                                 if ($status === 'in_progress') {
                                     return ['in_progress' => 'In Progress', 'resolved' => 'Resolved'];
@@ -94,11 +105,11 @@ class TicketResource extends Resource
                                 if ($status === 'resolved') {
                                     return ['resolved' => 'Resolved', 'closed' => 'Closed', 'in_progress' => 'In Progress (Re-open)'];
                                 }
-                                if ($status === 'closed') {
-                                    return ['closed' => 'Closed'];
+                                if ($status === 'closed' || $status === 'cancelled') {
+                                    return [$status => ucfirst($status)];
                                 }
 
-                                return ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed'];
+                                return ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled'];
                             })
                             ->default('open')
                             ->required()
@@ -108,7 +119,7 @@ class TicketResource extends Resource
                             ->label('Assign IT Support')
                             ->relationship('support', 'id')
                             ->getOptionLabelFromRecordUsing(fn (Support $record) => $record->user->name)
-                            ->searchable(['id'])
+                            ->searchable()
                             ->preload()
                             ->nullable()
                             ->visible($isAdmin || $isItSupport),
@@ -177,6 +188,7 @@ class TicketResource extends Resource
                         'in_progress' => 'In Progress',
                         'resolved' => 'Resolved',
                         'closed' => 'Closed',
+                        'cancelled' => 'Cancelled',
                         default => $state,
                     })
                     ->color(fn (string $state) => match ($state) {
@@ -184,6 +196,7 @@ class TicketResource extends Resource
                         'in_progress' => 'warning',
                         'resolved' => 'success',
                         'closed' => 'danger',
+                        'cancelled' => 'danger',
                         default => 'gray',
                     }),
 
@@ -206,6 +219,7 @@ class TicketResource extends Resource
                         'in_progress' => 'In Progress',
                         'resolved' => 'Resolved',
                         'closed' => 'Closed',
+                        'cancelled' => 'Cancelled',
                     ]),
 
                 Tables\Filters\SelectFilter::make('priority')

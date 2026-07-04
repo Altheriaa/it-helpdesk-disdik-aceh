@@ -25,6 +25,26 @@ class EditUser extends EditRecord
     }
 
     /**
+     * Pre-fill division_id and position from the client or support profile.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $user = $this->record;
+
+        $profile = $user->client ?? $user->support;
+
+        if ($profile) {
+            $data['division_id'] = $profile->division_id;
+            $data['position'] = $profile->position;
+        }
+
+        return $data;
+    }
+
+    /**
      * After saving the user, sync the associated client or support profile.
      */
     protected function afterSave(): void

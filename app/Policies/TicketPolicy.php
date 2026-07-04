@@ -40,7 +40,7 @@ class TicketPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'it_support', 'pegawai']);
+        return $user->hasAnyRole(['admin', 'pegawai']);
     }
 
     /**

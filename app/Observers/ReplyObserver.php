@@ -42,7 +42,7 @@ class ReplyObserver
 
         // Jika yang membalas adalah Pegawai, kirim WA ke IT Support
         if ($currentUser->hasRole('pegawai')) {
-            $support = $ticket->support->user ?? null;
+            $support = $ticket->support?->user ?? null;
 
             if ($support && $support->phone) {
                 $this->fonnte->send(

@@ -51,6 +51,7 @@ class TicketObserver
                 'in_progress' => '🔄 Sedang Diproses',
                 'resolved' => '✅ Telah Diselesaikan',
                 'closed' => '🔒 Ditutup',
+                'cancelled' => '❌ Dibatalkan',
                 default => $ticket->status,
             };
 
@@ -90,10 +91,10 @@ class TicketObserver
                     $ticket->id,
                     $pegawaiId,
                     $pegawaiPhone,
-                    "🔔 *Tiket Anda Sedang Diproses*\n".
+                    "🔔 *Tiket Anda Sudah Ditugaskan*\n".
                     "Subjek: {$ticket->subject}\n".
                     "Ditangani oleh: {$ticket->support->user->name}\n".
-                    'Status: In Progress'
+                    'Mohon tunggu proses penanganan.'
                 );
             }
         }

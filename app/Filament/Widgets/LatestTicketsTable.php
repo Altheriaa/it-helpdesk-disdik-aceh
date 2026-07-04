@@ -20,7 +20,10 @@ class LatestTicketsTable extends BaseWidget
         $query = Ticket::query()->with(['client.user', 'client.division', 'support.user']);
 
         if ($user?->hasRole('it_support')) {
-            $query->where('support_id', $user->support?->id);
+            $query->where(function (Builder $q) use ($user) {
+                $q->where('support_id', $user->support?->id)
+                    ->orWhereNull('support_id');
+            });
         } elseif ($user?->hasRole('pegawai')) {
             $query->whereHas('client', fn (Builder $q) => $q->where('user_id', $user->id));
         }
@@ -60,11 +63,13 @@ class LatestTicketsTable extends BaseWidget
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         'open' => 'Open', 'in_progress' => 'In Progress',
                         'resolved' => 'Resolved', 'closed' => 'Closed',
+                        'cancelled' => 'Cancelled',
                         default => $state,
                     })
                     ->color(fn (string $state) => match ($state) {
                         'open' => 'gray', 'in_progress' => 'warning',
                         'resolved' => 'success', 'closed' => 'danger',
+                        'cancelled' => 'danger',
                         default => 'gray',
                     }),
 

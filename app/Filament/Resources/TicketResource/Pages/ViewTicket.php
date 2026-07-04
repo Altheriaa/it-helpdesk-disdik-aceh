@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TicketResource\Pages;
 
 use App\Filament\Resources\TicketResource;
+use App\Models\File;
 use App\Models\Reply;
 use Filament\Actions;
 use Filament\Forms;
@@ -11,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class ViewTicket extends ViewRecord
 {
@@ -67,6 +69,7 @@ class ViewTicket extends ViewRecord
                                 'in_progress' => 'In Progress',
                                 'resolved' => 'Resolved',
                                 'closed' => 'Closed',
+                                'cancelled' => 'Cancelled',
                                 default => $state,
                             })
                             ->color(fn (string $state) => match ($state) {
@@ -74,6 +77,7 @@ class ViewTicket extends ViewRecord
                                 'in_progress' => 'warning',
                                 'resolved' => 'success',
                                 'closed' => 'danger',
+                                'cancelled' => 'danger',
                                 default => 'gray',
                             }),
 
@@ -137,13 +141,30 @@ class ViewTicket extends ViewRecord
                         ->label('Pesan Balasan')
                         ->required()
                         ->rows(4),
+
+                    Forms\Components\FileUpload::make('attachments')
+                        ->label('Lampiran')
+                        ->multiple()
+                        ->directory('replies')
+                        ->disk('public')
+                        ->maxSize(10240)
+                        ->acceptedFileTypes(['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
                 ])
                 ->action(function (array $data): void {
-                    Reply::create([
+                    $reply = Reply::create([
                         'ticket_id' => $this->record->id,
                         'user_id' => auth()->id(),
                         'message' => $data['message'],
                     ]);
+
+                    foreach ($data['attachments'] ?? [] as $path) {
+                        File::create([
+                            'reply_id' => $reply->id,
+                            'file_path' => $path,
+                            'file_name' => basename($path),
+                            'file_size' => Storage::disk('public')->size($path),
+                        ]);
+                    }
 
                     Notification::make()
                         ->title('Balasan terkirim')
@@ -152,7 +173,7 @@ class ViewTicket extends ViewRecord
 
                     $this->refreshFormData(['replies']);
                 })
-                ->visible(fn () => ! in_array($this->record->status, ['resolved', 'closed'])),
+                ->visible(fn () => ! in_array($this->record->status, ['resolved', 'closed', 'cancelled'])),
         ];
     }
 }

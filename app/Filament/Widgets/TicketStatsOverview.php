@@ -18,7 +18,10 @@ class TicketStatsOverview extends BaseWidget
 
         // Scope query based on role
         if ($user?->hasRole('it_support')) {
-            $baseQuery->where('support_id', $user->support?->id);
+            $baseQuery->where(function (Builder $q) use ($user) {
+                $q->where('support_id', $user->support?->id)
+                    ->orWhereNull('support_id');
+            });
         } elseif ($user?->hasRole('pegawai')) {
             $baseQuery->whereHas('client', fn (Builder $q) => $q->where('user_id', $user->id));
         }
