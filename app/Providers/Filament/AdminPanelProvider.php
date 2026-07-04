@@ -14,6 +14,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -26,6 +27,8 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('E-Helpdesk Disdik')
+            ->brandLogo(new HtmlString('<div style="display:flex;align-items:center;gap:10px;"><img src="/images/Logo.svg" alt="Logo" style="height:36px;width:36px;object-fit:contain;"> <span style="font-weight:700;font-size:1.1rem;">E-Helpdesk Disdik</span></div>'))
+            ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::Blue,
                 'danger' => Color::Red,

@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Ticket;
+use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -10,9 +11,24 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LatestTicketsTable extends BaseWidget
 {
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 7;
 
     protected int|string|array $columnSpan = 'full';
+
+    protected function getTableHeading(): string
+    {
+        $user = auth()->user();
+
+        if ($user?->hasRole('admin')) {
+            return 'Tiket Terbaru';
+        }
+
+        if ($user?->hasRole('it_support')) {
+            return 'Antrian Tiket Anda';
+        }
+
+        return 'Tiket Anda Terbaru';
+    }
 
     public function table(Table $table): Table
     {
@@ -73,9 +89,17 @@ class LatestTicketsTable extends BaseWidget
                         default => 'gray',
                     }),
 
+                Tables\Columns\TextColumn::make('support.user.name')
+                    ->label('IT Support')
+                    ->default('Belum diassign'),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
                     ->dateTime('d M Y H:i'),
+            ])
+            ->actions([
+                Actions\ViewAction::make()
+                    ->url(fn (Ticket $record) => route('filament.admin.resources.tickets.view', $record)),
             ]);
     }
 }

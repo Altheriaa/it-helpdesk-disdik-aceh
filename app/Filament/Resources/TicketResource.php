@@ -54,19 +54,21 @@ class TicketResource extends Resource
                             ->default(fn () => $isPegawai ? $user?->client?->id : null),
 
                         Forms\Components\Hidden::make('client_id')
-                            ->default(fn () => $user?->client?->id)
-                            ->visible($isPegawai),
+                            ->default(fn () => $isPegawai ? $user?->client?->id : null)
+                            ->visible(! $isAdmin),
 
                         Forms\Components\TextInput::make('subject')
                             ->label('Subjek')
                             ->required()
                             ->maxLength(255)
+                            ->disabled($isItSupport)
                             ->columnSpanFull(),
 
                         Forms\Components\Textarea::make('description')
                             ->label('Deskripsi')
                             ->required()
                             ->rows(5)
+                            ->disabled($isItSupport)
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('priority')
@@ -76,6 +78,7 @@ class TicketResource extends Resource
                                 : ['low' => 'Rendah', 'medium' => 'Sedang', 'high' => 'Tinggi', 'critical' => 'Kritis']
                             )
                             ->default('medium')
+                            ->disabled($isItSupport)
                             ->required(),
 
                         Forms\Components\Select::make('status')
@@ -122,6 +125,7 @@ class TicketResource extends Resource
                             ->searchable()
                             ->preload()
                             ->nullable()
+                            ->disabled($isItSupport)
                             ->visible($isAdmin || $isItSupport),
                     ])->columns(2),
 
