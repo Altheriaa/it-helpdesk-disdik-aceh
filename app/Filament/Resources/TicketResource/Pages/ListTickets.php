@@ -67,10 +67,16 @@ class ListTickets extends ListRecords
             return;
         }
 
-        $ticket->update([
+        $data = [
             'support_id' => $user->support?->id,
-            'status' => 'in_progress',
-        ]);
+        ];
+
+        // Hanya ubah status ke in_progress jika status saat ini masih open
+        if ($ticket->status === 'open') {
+            $data['status'] = 'in_progress';
+        }
+
+        $ticket->update($data);
 
         Notification::make()
             ->title('Tiket Berhasil Di-assign')
@@ -138,7 +144,7 @@ class ListTickets extends ListRecords
         return [
             'open' => $allTickets->where('status', 'open'),
             'in_progress' => $allTickets->where('status', 'in_progress'),
-            'resolved' => $allTickets->whereIn('status', ['resolved', 'closed']),
+            'resolved' => $allTickets->whereIn('status', ['resolved', 'closed', 'cancelled']),
         ];
     }
 

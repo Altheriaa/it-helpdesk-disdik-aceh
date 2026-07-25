@@ -27,6 +27,17 @@ class ViewTicket extends ViewRecord
 
     public function sendReply(): void
     {
+        // Pengecekan server-side: Jangan izinkan balasan jika tiket ditutup / dibatalkan
+        if (in_array($this->record->status, ['closed', 'cancelled'])) {
+            Notification::make()
+                ->title('Gagal Mengirim Balasan')
+                ->body('Tiket ini sudah ditutup atau dibatalkan.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $this->validate([
             'replyMessage' => 'required|string|min:1',
         ]);
@@ -47,11 +58,11 @@ class ViewTicket extends ViewRecord
             ]);
         }
 
+        // Send Notification DULU sebelum variabel di-reset!
+        $this->sendReplyNotification();
+
         $this->replyMessage = '';
         $this->attachments = [];
-
-        // Notify relevant user
-        $this->sendReplyNotification();
 
         Notification::make()
             ->title('Pesan Terkirim')
@@ -112,7 +123,9 @@ class ViewTicket extends ViewRecord
                 ->label('Assign ke Saya')
                 ->icon('heroicon-o-user-check')
                 ->color('success')
-                ->visible(fn () => auth()->user()?->hasRole('it_support') && $this->record->support_id !== auth()->user()?->support?->id)
+                ->visible(fn () => auth()->user()?->hasRole('it_support')
+                    && $this->record->support_id !== auth()->user()?->support?->id
+                    && ! in_array($this->record->status, ['closed', 'cancelled']))
                 ->action(function (): void {
                     $user = auth()->user();
                     $this->record->update([
@@ -131,7 +144,8 @@ class ViewTicket extends ViewRecord
                 ->label('Assign IT Support')
                 ->icon('heroicon-o-user-plus')
                 ->color('primary')
-                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support']))
+                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])
+                    && ! in_array($this->record->status, ['closed', 'cancelled']))
                 ->form([
                     Forms\Components\Select::make('support_id')
                         ->label('Pilih Petugas IT Support')
@@ -157,17 +171,36 @@ class ViewTicket extends ViewRecord
                 ->label('Ubah Status')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
-                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support']))
+                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])
+                    && ! in_array($this->record->status, ['closed', 'cancelled']))
                 ->form([
                     Forms\Components\Select::make('status')
                         ->label('Pilih Status Tiket')
-                        ->options([
-                            'open' => 'Open (Baru)',
-                            'in_progress' => 'In Progress (Diproses)',
-                            'resolved' => 'Resolved (Selesai)',
-                            'closed' => 'Closed (Ditutup)',
-                            'cancelled' => 'Cancelled (Dibatalkan)',
-                        ])
+                        ->options(function (): array {
+                            $status = $this->record->status;
+                            if ($status === 'open') {
+                                return [
+                                    'open' => 'Open (Baru)',
+                                    'in_progress' => 'In Progress (Diproses)',
+                                    'cancelled' => 'Cancelled (Batal)',
+                                ];
+                            }
+                            if ($status === 'in_progress') {
+                                return [
+                                    'in_progress' => 'In Progress (Diproses)',
+                                    'resolved' => 'Resolved (Selesai)',
+                                ];
+                            }
+                            if ($status === 'resolved') {
+                                return [
+                                    'resolved' => 'Resolved (Selesai)',
+                                    'closed' => 'Closed (Ditutup)',
+                                    'in_progress' => 'In Progress (Re-open)',
+                                ];
+                            }
+
+                            return [$status => ucfirst($status)];
+                        })
                         ->default(fn () => $this->record->status)
                         ->required(),
                 ])
