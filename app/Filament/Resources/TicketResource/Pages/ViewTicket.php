@@ -5,8 +5,10 @@ namespace App\Filament\Resources\TicketResource\Pages;
 use App\Filament\Resources\TicketResource;
 use App\Models\File;
 use App\Models\Reply;
+use App\Models\Support;
 use App\Models\User;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Livewire\WithFileUploads;
@@ -106,8 +108,82 @@ class ViewTicket extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('assignToMe')
+                ->label('Assign ke Saya')
+                ->icon('heroicon-o-user-check')
+                ->color('success')
+                ->visible(fn () => auth()->user()?->hasRole('it_support') && $this->record->support_id !== auth()->user()?->support?->id)
+                ->action(function (): void {
+                    $user = auth()->user();
+                    $this->record->update([
+                        'support_id' => $user->support?->id,
+                        'status' => $this->record->status === 'open' ? 'in_progress' : $this->record->status,
+                    ]);
+
+                    Notification::make()
+                        ->title('Tiket Berhasil Diassign')
+                        ->body('Anda sekarang menangani Tiket #'.$this->record->id.'.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('assignSupport')
+                ->label('Assign IT Support')
+                ->icon('heroicon-o-user-plus')
+                ->color('primary')
+                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support']))
+                ->form([
+                    Forms\Components\Select::make('support_id')
+                        ->label('Pilih Petugas IT Support')
+                        ->options(Support::with('user')->get()->pluck('user.name', 'id'))
+                        ->searchable()
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $this->record->update([
+                        'support_id' => $data['support_id'],
+                        'status' => $this->record->status === 'open' ? 'in_progress' : $this->record->status,
+                    ]);
+
+                    $support = Support::find($data['support_id']);
+                    Notification::make()
+                        ->title('IT Support Berhasil Ditetapkan')
+                        ->body('Tiket #'.$this->record->id.' ditugaskan kepada '.($support->user->name ?? 'IT Support').'.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('changeStatus')
+                ->label('Ubah Status')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support']))
+                ->form([
+                    Forms\Components\Select::make('status')
+                        ->label('Pilih Status Tiket')
+                        ->options([
+                            'open' => 'Open (Baru)',
+                            'in_progress' => 'In Progress (Diproses)',
+                            'resolved' => 'Resolved (Selesai)',
+                            'closed' => 'Closed (Ditutup)',
+                            'cancelled' => 'Cancelled (Dibatalkan)',
+                        ])
+                        ->default(fn () => $this->record->status)
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $this->record->update([
+                        'status' => $data['status'],
+                    ]);
+
+                    Notification::make()
+                        ->title('Status Tiket Berhasil Diubah')
+                        ->success()
+                        ->send();
+                }),
+
             Actions\EditAction::make()
-                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])),
+                ->visible(fn () => auth()->user()?->hasRole('admin')),
         ];
     }
 }

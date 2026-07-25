@@ -459,6 +459,24 @@
             border-color: rgba(255, 255, 255, 0.15);
             color: #f8fafc;
         }
+
+        /* Quick Action Inline Buttons */
+        .bay-btn-inline-action {
+            border: none;
+            background: #eff6ff;
+            color: #004799;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            border: 1px solid #dbeafe;
+            transition: all 0.15s ease;
+        }
+
+        .bay-btn-inline-action:hover {
+            background: #dbeafe;
+        }
     </style>
 
     <div class="bay-app">
@@ -510,12 +528,26 @@
 
                     <div class="bay-detail-item">
                         <span class="bay-detail-label">Status</span>
-                        <span class="bay-detail-val">{{ $statusLabel[$ticket->status] ?? ucfirst($ticket->status) }}</span>
+                        <div style="display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap;">
+                            <span class="bay-detail-val">{{ $statusLabel[$ticket->status] ?? ucfirst($ticket->status) }}</span>
+                            @if($user?->hasAnyRole(['admin', 'it_support']))
+                                <button type="button" wire:click="mountAction('changeStatus')" class="bay-btn-inline-action" style="background: #fff7ed; color: #ea580c; border-color: #ffedd5;">
+                                    Ubah
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="bay-detail-item">
                         <span class="bay-detail-label">IT Support</span>
-                        <span class="bay-detail-val">{{ $ticket->support->user->name ?? 'Belum diassign' }}</span>
+                        <div style="display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap;">
+                            <span class="bay-detail-val">{{ $ticket->support->user->name ?? 'Belum diassign' }}</span>
+                            @if($user?->hasAnyRole(['admin', 'it_support']))
+                                <button type="button" wire:click="mountAction('assignSupport')" class="bay-btn-inline-action">
+                                    Assign
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
