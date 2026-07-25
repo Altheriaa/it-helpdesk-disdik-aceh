@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications()
+            ->databaseNotificationsPolling('5s')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

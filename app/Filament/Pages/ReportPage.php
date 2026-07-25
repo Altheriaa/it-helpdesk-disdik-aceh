@@ -185,6 +185,28 @@ class ReportPage extends Page implements HasForms, HasTable
         return $query;
     }
 
+    public function getFilteredMetrics(): array
+    {
+        $tickets = $this->getFilteredQuery()->get();
+
+        $total = $tickets->count();
+        $open = $tickets->where('status', 'open')->count();
+        $inProgress = $tickets->where('status', 'in_progress')->count();
+        $resolved = $tickets->where('status', 'resolved')->count();
+        $closed = $tickets->where('status', 'closed')->count();
+
+        $rate = $total > 0 ? round((($resolved + $closed) / $total) * 100) : 0;
+
+        return [
+            'total' => $total,
+            'open' => $open,
+            'in_progress' => $inProgress,
+            'resolved' => $resolved,
+            'closed' => $closed,
+            'rate' => $rate,
+        ];
+    }
+
     public function exportPdf()
     {
         $tickets = $this->getFilteredQuery()->get();
