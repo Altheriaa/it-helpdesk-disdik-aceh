@@ -5,125 +5,102 @@ namespace App\Filament\Resources\TicketResource\Pages;
 use App\Filament\Resources\TicketResource;
 use App\Models\File;
 use App\Models\Reply;
+use App\Models\User;
 use Filament\Actions;
-use Filament\Forms;
-use Filament\Infolists;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\Storage;
+use Livewire\WithFileUploads;
 
 class ViewTicket extends ViewRecord
 {
+    use WithFileUploads;
+
     protected static string $resource = TicketResource::class;
 
-    public function infolist(Schema $schema): Schema
+    protected string $view = 'filament.resources.ticket-resource.pages.view-ticket';
+
+    public string $replyMessage = '';
+
+    public array $attachments = [];
+
+    public function sendReply(): void
     {
-        return $schema
-            ->schema([
-                Section::make('Detail Tiket')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('id')
-                            ->label('No. Tiket')
-                            ->prefix('#'),
+        $this->validate([
+            'replyMessage' => 'required|string|min:1',
+        ]);
 
-                        Infolists\Components\TextEntry::make('client.user.name')
-                            ->label('Pegawai'),
+        $reply = Reply::create([
+            'ticket_id' => $this->record->id,
+            'user_id' => auth()->id(),
+            'message' => $this->replyMessage,
+        ]);
 
-                        Infolists\Components\TextEntry::make('client.division.name')
-                            ->label('Bidang'),
-
-                        Infolists\Components\TextEntry::make('subject')
-                            ->label('Subjek')
-                            ->columnSpanFull(),
-
-                        Infolists\Components\TextEntry::make('description')
-                            ->label('Deskripsi')
-                            ->columnSpanFull()
-                            ->markdown(),
-
-                        Infolists\Components\TextEntry::make('priority')
-                            ->label('Prioritas')
-                            ->badge()
-                            ->formatStateUsing(fn (string $state) => match ($state) {
-                                'low' => 'Rendah',
-                                'medium' => 'Sedang',
-                                'high' => 'Tinggi',
-                                'critical' => 'Kritis',
-                                default => $state,
-                            })
-                            ->color(fn (string $state) => match ($state) {
-                                'low' => 'gray',
-                                'medium' => 'warning',
-                                'high' => 'danger',
-                                'critical' => 'primary',
-                                default => 'gray',
-                            }),
-
-                        Infolists\Components\TextEntry::make('status')
-                            ->label('Status')
-                            ->badge()
-                            ->formatStateUsing(fn (string $state) => match ($state) {
-                                'open' => 'Open',
-                                'in_progress' => 'In Progress',
-                                'resolved' => 'Resolved',
-                                'closed' => 'Closed',
-                                'cancelled' => 'Cancelled',
-                                default => $state,
-                            })
-                            ->color(fn (string $state) => match ($state) {
-                                'open' => 'gray',
-                                'in_progress' => 'warning',
-                                'resolved' => 'success',
-                                'closed' => 'danger',
-                                'cancelled' => 'danger',
-                                default => 'gray',
-                            }),
-
-                        Infolists\Components\TextEntry::make('support.user.name')
-                            ->label('IT Support')
-                            ->default('Belum diassign'),
-
-                        Infolists\Components\TextEntry::make('created_at')
-                            ->label('Dibuat')
-                            ->dateTime('d M Y H:i'),
-                    ])->columns(3),
-
-                Section::make('Lampiran')
-                    ->schema([
-                        Infolists\Components\RepeatableEntry::make('files')
-                            ->schema([
-                                Infolists\Components\TextEntry::make('file_name')
-                                    ->label('Nama File')
-                                    ->url(fn ($record) => asset('storage/'.$record->file_path), shouldOpenInNewTab: true),
-                            ])
-                            ->columns(1),
-                    ])
-                    ->visible(fn ($record) => $record->files->count() > 0)
-                    ->collapsible(),
-
-                Section::make('Thread Balasan')
-                    ->schema([
-                        Infolists\Components\RepeatableEntry::make('replies')
-                            ->schema([
-                                Infolists\Components\TextEntry::make('user.name')
-                                    ->label('Dari')
-                                    ->weight('bold'),
-
-                                Infolists\Components\TextEntry::make('created_at')
-                                    ->label('Waktu')
-                                    ->dateTime('d M Y H:i')
-                                    ->size('sm'),
-
-                                Infolists\Components\TextEntry::make('message')
-                                    ->label('')
-                                    ->markdown()
-                                    ->columnSpanFull(),
-                            ])
-                            ->columns(2),
-                    ]),
+        foreach ($this->attachments as $file) {
+            $path = $file->store('replies', 'public');
+            File::create([
+                'reply_id' => $reply->id,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
             ]);
+        }
+
+        $this->replyMessage = '';
+        $this->attachments = [];
+
+        // Notify relevant user
+        $this->sendReplyNotification();
+
+        Notification::make()
+            ->title('Pesan Terkirim')
+            ->success()
+            ->send();
+    }
+
+    protected function sendReplyNotification(): void
+    {
+        $currentUser = auth()->user();
+        $ticket = $this->record;
+
+        $recipients = collect();
+
+        if ($currentUser->hasAnyRole(['admin', 'it_support'])) {
+            // Notify client
+            if ($ticket->client?->user) {
+                $recipients->push($ticket->client->user);
+            }
+        } else {
+            // Notify IT Support & Admin
+            if ($ticket->support?->user) {
+                $recipients->push($ticket->support->user);
+            }
+            $admins = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->get();
+            $recipients = $recipients->merge($admins)->unique('id');
+        }
+
+        $recipients = $recipients->reject(fn ($u) => $u->id === $currentUser->id);
+
+        if ($recipients->count() > 0) {
+            Notification::make()
+                ->title('Balasan Baru pada Tiket #'.$ticket->id)
+                ->body($currentUser->name.': '.str($this->replyMessage)->limit(50))
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->info()
+                ->actions([
+                    Actions\Action::make('view')
+                        ->label('Lihat Balasan')
+                        ->url(TicketResource::getUrl('view', ['record' => $ticket])),
+                ])
+                ->sendToDatabase($recipients);
+        }
+    }
+
+    public function removeAttachment(int $index): void
+    {
+        if (isset($this->attachments[$index])) {
+            unset($this->attachments[$index]);
+            $this->attachments = array_values($this->attachments);
+        }
     }
 
     protected function getHeaderActions(): array
@@ -131,49 +108,6 @@ class ViewTicket extends ViewRecord
         return [
             Actions\EditAction::make()
                 ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])),
-
-            Actions\Action::make('reply')
-                ->label('Balas Tiket')
-                ->icon('heroicon-o-chat-bubble-left-right')
-                ->color('success')
-                ->form([
-                    Forms\Components\Textarea::make('message')
-                        ->label('Pesan Balasan')
-                        ->required()
-                        ->rows(4),
-
-                    Forms\Components\FileUpload::make('attachments')
-                        ->label('Lampiran')
-                        ->multiple()
-                        ->directory('replies')
-                        ->disk('public')
-                        ->maxSize(10240)
-                        ->acceptedFileTypes(['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
-                ])
-                ->action(function (array $data): void {
-                    $reply = Reply::create([
-                        'ticket_id' => $this->record->id,
-                        'user_id' => auth()->id(),
-                        'message' => $data['message'],
-                    ]);
-
-                    foreach ($data['attachments'] ?? [] as $path) {
-                        File::create([
-                            'reply_id' => $reply->id,
-                            'file_path' => $path,
-                            'file_name' => basename($path),
-                            'file_size' => Storage::disk('public')->size($path),
-                        ]);
-                    }
-
-                    Notification::make()
-                        ->title('Balasan terkirim')
-                        ->success()
-                        ->send();
-
-                    $this->refreshFormData(['replies']);
-                })
-                ->visible(fn () => ! in_array($this->record->status, ['resolved', 'closed', 'cancelled'])),
         ];
     }
 }

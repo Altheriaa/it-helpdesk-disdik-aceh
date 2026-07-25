@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Filament\Resources\TicketResource;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +28,59 @@ class Ticket extends Model
             'priority' => 'string',
             'status' => 'string',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(function (Ticket $ticket) {
+            // Send real-time database notification to Pegawai when status changes
+            if ($ticket->wasChanged('status')) {
+                $clientUser = $ticket->client?->user;
+
+                if ($clientUser) {
+                    $statusText = match ($ticket->status) {
+                        'open' => 'Baru / Open',
+                        'in_progress' => 'Sedang Diproses (In Progress)',
+                        'resolved' => 'Selesai (Resolved)',
+                        'closed' => 'Ditutup (Closed)',
+                        'cancelled' => 'Dibatalkan',
+                        default => ucfirst($ticket->status),
+                    };
+
+                    Notification::make()
+                        ->title('Status Tiket #'.$ticket->id.' Diperbarui')
+                        ->body('Status tiket Anda ("'.str($ticket->subject)->limit(35).'") kini diubah menjadi '.$statusText.'.')
+                        ->icon('heroicon-o-arrow-path')
+                        ->info()
+                        ->actions([
+                            Action::make('view')
+                                ->label('Lihat Tiket')
+                                ->url(TicketResource::getUrl('view', ['record' => $ticket])),
+                        ])
+                        ->sendToDatabase($clientUser);
+                }
+            }
+
+            // Send notification when IT Support is assigned
+            if ($ticket->wasChanged('support_id') && $ticket->support_id) {
+                $clientUser = $ticket->client?->user;
+                $supportName = $ticket->support?->user?->name ?? 'IT Support';
+
+                if ($clientUser) {
+                    Notification::make()
+                        ->title('Tiket Ditangani Petugas IT')
+                        ->body('Tiket #'.$ticket->id.' Anda kini sedang ditangani oleh '.$supportName.'.')
+                        ->icon('heroicon-o-user-check')
+                        ->success()
+                        ->actions([
+                            Action::make('view')
+                                ->label('Lihat Tiket')
+                                ->url(TicketResource::getUrl('view', ['record' => $ticket])),
+                        ])
+                        ->sendToDatabase($clientUser);
+                }
+            }
+        });
     }
 
     /**
