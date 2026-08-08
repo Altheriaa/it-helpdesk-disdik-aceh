@@ -8,7 +8,6 @@ use App\Models\User;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -41,73 +40,75 @@ class UserResource extends Resource
     {
         return $schema
             ->schema([
-                Section::make('Informasi Akun')
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nama Lengkap')
-                            ->required()
-                            ->maxLength(255),
+                Forms\Components\TextInput::make('name')
+                    ->label('Nama Lengkap')
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('email')
-                            ->label('Email')
-                            ->email()
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255),
+                Forms\Components\TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(255)
+                    ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('password')
-                            ->label('Password')
-                            ->password()
-                            ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
-                            ->dehydrated(fn (?string $state) => filled($state))
-                            ->required(fn (string $operation) => $operation === 'create')
-                            ->revealable(),
+                Forms\Components\TextInput::make('password')
+                    ->label('Password')
+                    ->password()
+                    ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
+                    ->dehydrated(fn (?string $state) => filled($state))
+                    ->required(fn (string $operation) => $operation === 'create')
+                    ->revealable()
+                    ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('phone')
-                            ->label('No. HP (WhatsApp)')
-                            ->tel()
-                            ->placeholder('628xxxxxxxxxx')
-                            ->maxLength(15),
+                Forms\Components\TextInput::make('phone')
+                    ->label('No. HP (WhatsApp)')
+                    ->tel()
+                    ->placeholder('628xxxxxxxxxx')
+                    ->maxLength(15)
+                    ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('nip')
-                            ->label('NIP')
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(30),
-                    ])->columns(2),
+                Forms\Components\TextInput::make('nip')
+                    ->label('NIP')
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(30)
+                    ->columnSpan(1),
 
-                Section::make('Role & Bidang')
-                    ->schema([
-                        Forms\Components\Select::make('roles')
-                            ->label('Role')
-                            ->relationship('roles', 'name')
-                            ->required()
-                            ->preload()
-                            ->live(),
+                Forms\Components\Select::make('roles')
+                    ->label('Role')
+                    ->relationship('roles', 'name')
+                    ->required()
+                    ->preload()
+                    ->live()
+                    ->columnSpan(1),
 
-                        Forms\Components\Select::make('division_id')
-                            ->label('Bidang / Unit Kerja')
-                            ->relationship('client.division', 'name', fn () => Division::query())
-                            ->options(Division::pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->visible(function (Get $get) {
-                                $roleIds = (array) $get('roles');
-                                $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
+                Forms\Components\Select::make('division_id')
+                    ->label('Bidang / Unit Kerja')
+                    ->relationship('client.division', 'name', fn () => Division::query())
+                    ->options(Division::pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->visible(function (Get $get) {
+                        $roleIds = (array) $get('roles');
+                        $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
 
-                                return in_array('pegawai', $roleNames) || in_array('it_support', $roleNames);
-                            }),
+                        return in_array('pegawai', $roleNames) || in_array('it_support', $roleNames);
+                    })
+                    ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('position')
-                            ->label('Jabatan')
-                            ->maxLength(255)
-                            ->visible(function (Get $get) {
-                                $roleIds = (array) $get('roles');
-                                $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
+                Forms\Components\TextInput::make('position')
+                    ->label('Jabatan')
+                    ->maxLength(255)
+                    ->visible(function (Get $get) {
+                        $roleIds = (array) $get('roles');
+                        $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
 
-                                return in_array('pegawai', $roleNames) || in_array('it_support', $roleNames);
-                            }),
-                    ])->columns(2),
-            ]);
+                        return in_array('pegawai', $roleNames) || in_array('it_support', $roleNames);
+                    })
+                    ->columnSpan(1),
+            ])->columns(2);
     }
 
     public static function table(Table $table): Table

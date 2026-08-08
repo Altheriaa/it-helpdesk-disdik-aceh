@@ -9,7 +9,6 @@ use App\Models\Ticket;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -41,117 +40,127 @@ class TicketResource extends Resource
 
         return $schema
             ->schema([
-                Section::make('Detail Tiket')
-                    ->schema([
-                        Forms\Components\Select::make('client_id')
-                            ->label('Pegawai')
-                            ->relationship('client', 'id')
-                            ->getOptionLabelFromRecordUsing(fn (Client $record) => $record->user->name.' — '.$record->division->name)
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->visible($isAdmin)
-                            ->default(fn () => $isPegawai ? $user?->client?->id : null),
+                Forms\Components\Select::make('client_id')
+                    ->label('Pegawai / Pemohon')
+                    ->relationship('client', 'id')
+                    ->getOptionLabelFromRecordUsing(fn (Client $record) => $record->user->name.' — '.$record->division->name)
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->visible($isAdmin)
+                    ->default(fn () => $isPegawai ? $user?->client?->id : null)
+                    ->columnSpanFull(),
 
-                        Forms\Components\Hidden::make('client_id')
-                            ->default(fn () => $isPegawai ? $user?->client?->id : null)
-                            ->visible(! $isAdmin),
+                Forms\Components\Hidden::make('client_id')
+                    ->default(fn () => $isPegawai ? $user?->client?->id : null)
+                    ->visible(! $isAdmin),
 
-                        Forms\Components\TextInput::make('subject')
-                            ->label('Subjek')
-                            ->required()
-                            ->maxLength(255)
-                            ->disabled($isItSupport)
-                            ->columnSpanFull(),
+                Forms\Components\TextInput::make('subject')
+                    ->label('Subjek Tiket')
+                    ->required()
+                    ->maxLength(255)
+                    ->disabled($isItSupport)
+                    ->columnSpanFull(),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Deskripsi')
-                            ->required()
-                            ->rows(5)
-                            ->disabled($isItSupport)
-                            ->columnSpanFull(),
+                Forms\Components\Textarea::make('description')
+                    ->label('Deskripsi Masalah')
+                    ->required()
+                    ->rows(4)
+                    ->disabled($isItSupport)
+                    ->columnSpanFull(),
 
-                        Forms\Components\Select::make('priority')
-                            ->label('Prioritas')
-                            ->options(fn () => $isPegawai
-                                ? ['low' => 'Rendah', 'medium' => 'Sedang']
-                                : ['low' => 'Rendah', 'medium' => 'Sedang', 'high' => 'Tinggi', 'critical' => 'Kritis']
-                            )
-                            ->default('medium')
-                            ->disabled($isItSupport)
-                            ->required(),
+                Forms\Components\Select::make('priority')
+                    ->label('Prioritas')
+                    ->options(fn () => $isPegawai
+                        ? ['low' => 'Rendah', 'medium' => 'Sedang']
+                        : ['low' => 'Rendah', 'medium' => 'Sedang', 'high' => 'Tinggi', 'critical' => 'Kritis']
+                    )
+                    ->default('medium')
+                    ->disabled($isItSupport)
+                    ->required()
+                    ->columnSpan(1),
 
-                        Forms\Components\Select::make('status')
-                            ->label('Status')
-                            ->options(function (?Ticket $record) use ($isPegawai) {
-                                if (! $record) {
-                                    return ['open' => 'Open'];
-                                }
-                                $status = $record->status;
+                Forms\Components\Select::make('status')
+                    ->label('Status')
+                    ->options(function (?Ticket $record) use ($isAdmin, $isPegawai) {
+                        if (! $record) {
+                            return ['open' => 'Open'];
+                        }
+                        $status = $record->status;
 
-                                // Pegawai hanya bisa batalkan tiket open
-                                if ($isPegawai) {
-                                    if ($status === 'open') {
-                                        return ['open' => 'Open', 'cancelled' => 'Batalkan Tiket'];
-                                    }
+                        // Pegawai hanya bisa batalkan tiket open
+                        if ($isPegawai) {
+                            if ($status === 'open') {
+                                return ['open' => 'Open', 'cancelled' => 'Batalkan Tiket'];
+                            }
 
-                                    return [$status => ucfirst(str_replace('_', ' ', $status))];
-                                }
+                            return [$status => ucfirst(str_replace('_', ' ', $status))];
+                        }
 
-                                // IT Support & Admin — workflow transitions
-                                if ($status === 'open') {
-                                    return ['open' => 'Open', 'in_progress' => 'In Progress', 'cancelled' => 'Cancelled (Batal)'];
-                                }
-                                if ($status === 'in_progress') {
-                                    return ['in_progress' => 'In Progress', 'resolved' => 'Resolved'];
-                                }
-                                if ($status === 'resolved') {
-                                    return ['resolved' => 'Resolved', 'closed' => 'Closed', 'in_progress' => 'In Progress (Re-open)'];
-                                }
-                                if ($status === 'closed' || $status === 'cancelled') {
-                                    return [$status => ucfirst($status)];
-                                }
+                        // IT Support & Admin — workflow transitions
+                        if ($status === 'open') {
+                            return ['open' => 'Open', 'in_progress' => 'In Progress', 'cancelled' => 'Cancelled (Batal)'];
+                        }
+                        if ($status === 'in_progress') {
+                            return ['in_progress' => 'In Progress', 'resolved' => 'Resolved'];
+                        }
+                        if ($status === 'resolved') {
+                            if ($isAdmin) {
+                                return ['resolved' => 'Resolved', 'closed' => 'Closed', 'in_progress' => 'In Progress (Re-open)'];
+                            }
 
-                                return ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled'];
-                            })
-                            ->default('open')
-                            ->required()
-                            ->visible(fn (?Ticket $record) => $record !== null),
+                            return ['resolved' => 'Resolved', 'closed' => 'Closed'];
+                        }
+                        if ($status === 'closed' || $status === 'cancelled') {
+                            return [$status => ucfirst($status)];
+                        }
 
-                        Forms\Components\Select::make('support_id')
-                            ->label('Assign IT Support')
-                            ->relationship('support', 'id')
-                            ->getOptionLabelFromRecordUsing(fn (Support $record) => $record->user->name)
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->disabled($isItSupport)
-                            ->visible($isAdmin || $isItSupport),
-                    ])->columns(2),
+                        return ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled'];
+                    })
+                    ->default('open')
+                    ->required()
+                    ->visible(fn (?Ticket $record) => $record !== null)
+                    ->columnSpan(1),
 
-                Section::make('Lampiran')
-                    ->schema([
-                        Forms\Components\FileUpload::make('attachments')
-                            ->label('Upload File')
-                            ->multiple()
-                            ->directory('tickets')
-                            ->disk('public')
-                            ->maxSize(10240)
-                            ->acceptedFileTypes(['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-                            ->dehydrated(false),
-                    ])
+                Forms\Components\Select::make('support_id')
+                    ->label('Assign IT Support')
+                    ->relationship('support', 'id')
+                    ->getOptionLabelFromRecordUsing(fn (Support $record) => $record->user->name)
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->disabled($isItSupport)
+                    ->visible($isAdmin)
+                    ->columnSpanFull(),
+
+                Forms\Components\FileUpload::make('attachments')
+                    ->label('Upload File Lampiran')
+                    ->multiple()
+                    ->directory('tickets')
+                    ->disk('public')
+                    ->maxSize(10240)
+                    ->acceptedFileTypes(['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                    ->dehydrated(false)
                     ->visible(fn (?Ticket $record) => $record === null)
-                    ->collapsible(),
-            ]);
+                    ->columnSpanFull(),
+            ])->columns(2);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('#')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('ticket_number')
+                    ->label('No. Tiket')
+                    ->searchable(query: function ($query, string $search) {
+                        $clean = preg_replace('/[^0-9]/', '', $search);
+                        if ($clean !== '') {
+                            $query->where('id', 'like', "%{$clean}%");
+                        }
+                    })
+                    ->sortable(query: function ($query, string $direction) {
+                        return $query->orderBy('id', $direction);
+                    }),
 
                 Tables\Columns\TextColumn::make('client.user.name')
                     ->label('Pegawai')
@@ -224,7 +233,8 @@ class TicketResource extends Resource
                         'resolved' => 'Resolved',
                         'closed' => 'Closed',
                         'cancelled' => 'Cancelled',
-                    ]),
+                    ])
+                    ->visible(fn () => ! auth()->user()?->hasRole('pegawai')),
 
                 Tables\Filters\SelectFilter::make('priority')
                     ->label('Prioritas')
@@ -233,7 +243,8 @@ class TicketResource extends Resource
                         'medium' => 'Sedang',
                         'high' => 'Tinggi',
                         'critical' => 'Kritis',
-                    ]),
+                    ])
+                    ->visible(fn () => ! auth()->user()?->hasRole('pegawai')),
 
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasRole('admin')),

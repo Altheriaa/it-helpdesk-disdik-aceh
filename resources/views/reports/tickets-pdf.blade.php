@@ -81,20 +81,22 @@
     <table class="data">
         <thead>
             <tr>
-                <th style="width: 30px;">No</th>
+                <th style="width: 25px;">No</th>
+                <th style="width: 65px;">No. Tiket</th>
                 <th>Pegawai</th>
                 <th>Bidang</th>
                 <th>Subjek</th>
-                <th style="width: 60px;">Prioritas</th>
-                <th style="width: 70px;">Status</th>
+                <th style="width: 55px;">Prioritas</th>
+                <th style="width: 65px;">Status</th>
                 <th>IT Support</th>
-                <th style="width: 80px;">Tanggal</th>
+                <th style="width: 65px;">Tanggal</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($tickets as $index => $ticket)
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
+                    <td class="center" style="font-weight: bold;">{{ $ticket->ticket_number }}</td>
                     <td>{{ $ticket->client->user->name ?? '-' }}</td>
                     <td>{{ $ticket->client->division->name ?? '-' }}</td>
                     <td>{{ \Illuminate\Support\Str::limit($ticket->subject, 35) }}</td>

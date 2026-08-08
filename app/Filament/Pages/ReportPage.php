@@ -11,7 +11,6 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -56,38 +55,35 @@ class ReportPage extends Page implements HasForms, HasTable
     {
         return $schema
             ->schema([
-                Section::make('Filter Laporan')
-                    ->schema([
-                        Forms\Components\DatePicker::make('date_from')
-                            ->label('Dari Tanggal'),
+                Forms\Components\DatePicker::make('date_from')
+                    ->label('Dari Tanggal'),
 
-                        Forms\Components\DatePicker::make('date_until')
-                            ->label('Sampai Tanggal'),
+                Forms\Components\DatePicker::make('date_until')
+                    ->label('Sampai Tanggal'),
 
-                        Forms\Components\Select::make('division_id')
-                            ->label('Bidang')
-                            ->options(Division::pluck('name', 'id'))
-                            ->searchable()
-                            ->nullable(),
+                Forms\Components\Select::make('division_id')
+                    ->label('Bidang')
+                    ->options(Division::pluck('name', 'id'))
+                    ->searchable()
+                    ->nullable(),
 
-                        Forms\Components\Select::make('status')
-                            ->label('Status')
-                            ->options([
-                                'open' => 'Open',
-                                'in_progress' => 'In Progress',
-                                'resolved' => 'Resolved',
-                                'closed' => 'Closed',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->nullable(),
+                Forms\Components\Select::make('status')
+                    ->label('Status')
+                    ->options([
+                        'open' => 'Open',
+                        'in_progress' => 'In Progress',
+                        'resolved' => 'Resolved',
+                        'closed' => 'Closed',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->nullable(),
 
-                        Forms\Components\Select::make('support_id')
-                            ->label('IT Support')
-                            ->options(Support::with('user')->get()->pluck('user.name', 'id'))
-                            ->searchable()
-                            ->nullable(),
-                    ])->columns(5),
-            ]);
+                Forms\Components\Select::make('support_id')
+                    ->label('IT Support')
+                    ->options(Support::with('user')->get()->pluck('user.name', 'id'))
+                    ->searchable()
+                    ->nullable(),
+            ])->columns(5);
     }
 
     public function table(Table $table): Table
@@ -95,9 +91,9 @@ class ReportPage extends Page implements HasForms, HasTable
         return $table
             ->query($this->getFilteredQuery())
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('#')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('ticket_number')
+                    ->label('No. Tiket')
+                    ->sortable(query: fn ($query, $direction) => $query->orderBy('id', $direction)),
 
                 Tables\Columns\TextColumn::make('client.user.name')
                     ->label('Pegawai'),

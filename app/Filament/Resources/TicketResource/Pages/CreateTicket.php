@@ -14,6 +14,8 @@ class CreateTicket extends CreateRecord
 {
     protected static string $resource = TicketResource::class;
 
+    protected string $view = 'filament.resources.ticket-resource.pages.create-ticket';
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
@@ -23,7 +25,7 @@ class CreateTicket extends CreateRecord
     {
         return Notification::make()
             ->title('Tiket Berhasil Dibuat!')
-            ->body('Tiket Anda (#'.$this->record->id.') telah berhasil terkirim dan siap ditangani tim IT Support.')
+            ->body('Tiket Anda (#'.$this->record->ticket_number.') telah berhasil terkirim dan siap ditangani tim IT Support.')
             ->success()
             ->icon('heroicon-o-check-circle');
     }
@@ -54,7 +56,7 @@ class CreateTicket extends CreateRecord
 
             Notification::make()
                 ->title('Tiket Baru Masuk!')
-                ->body('Tiket #'.$this->record->id.' dari '.$clientName.': '.$this->record->subject)
+                ->body('Tiket #'.$this->record->ticket_number.' dari '.$clientName.': '.$this->record->subject)
                 ->icon('heroicon-o-ticket')
                 ->warning()
                 ->actions([

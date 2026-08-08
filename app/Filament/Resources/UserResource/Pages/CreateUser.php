@@ -11,6 +11,8 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
+    protected string $view = 'filament.resources.user-resource.pages.create-user';
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

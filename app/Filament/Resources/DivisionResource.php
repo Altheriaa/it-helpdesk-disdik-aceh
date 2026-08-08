@@ -7,7 +7,6 @@ use App\Models\Division;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -37,19 +36,18 @@ class DivisionResource extends Resource
     {
         return $schema
             ->schema([
-                Section::make()
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nama Bidang')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                Forms\Components\TextInput::make('name')
+                    ->label('Nama Bidang / Unit Kerja')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->columnSpanFull(),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Deskripsi')
-                            ->rows(3)
-                            ->maxLength(500),
-                    ]),
+                Forms\Components\Textarea::make('description')
+                    ->label('Deskripsi')
+                    ->rows(4)
+                    ->maxLength(500)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -57,10 +55,6 @@ class DivisionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('#')
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Bidang')
                     ->searchable()
@@ -74,6 +68,9 @@ class DivisionResource extends Resource
                 Tables\Columns\TextColumn::make('clients_count')
                     ->label('Jumlah Pegawai')
                     ->counts('clients')
+                    ->badge()
+                    ->formatStateUsing(fn (int $state): string => $state.' Pegawai')
+                    ->color(fn (int $state): string => $state > 0 ? 'info' : 'gray')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')

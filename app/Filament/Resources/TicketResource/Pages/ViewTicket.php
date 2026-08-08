@@ -144,7 +144,7 @@ class ViewTicket extends ViewRecord
                 ->label('Assign IT Support')
                 ->icon('heroicon-o-user-plus')
                 ->color('primary')
-                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])
+                ->visible(fn () => auth()->user()?->hasRole('admin')
                     && ! in_array($this->record->status, ['closed', 'cancelled']))
                 ->form([
                     Forms\Components\Select::make('support_id')
@@ -171,8 +171,8 @@ class ViewTicket extends ViewRecord
                 ->label('Ubah Status')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
-                ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'it_support'])
-                    && ! in_array($this->record->status, ['closed', 'cancelled']))
+                ->visible(fn () => auth()->user()?->hasRole('admin')
+                    || (auth()->user()?->hasRole('it_support') && in_array($this->record->status, ['open', 'in_progress'])))
                 ->form([
                     Forms\Components\Select::make('status')
                         ->label('Pilih Status Tiket')
@@ -205,6 +205,17 @@ class ViewTicket extends ViewRecord
                         ->required(),
                 ])
                 ->action(function (array $data): void {
+                    $user = auth()->user();
+                    if ($user?->hasRole('it_support') && ! in_array($this->record->status, ['open', 'in_progress'])) {
+                        Notification::make()
+                            ->title('Akses Ditolak')
+                            ->body('Anda tidak dapat mengubah status tiket yang sudah selesai.')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     $this->record->update([
                         'status' => $data['status'],
                     ]);
@@ -216,6 +227,9 @@ class ViewTicket extends ViewRecord
                 }),
 
             Actions\EditAction::make()
+                ->label('Edit')
+                ->icon('heroicon-o-pencil')
+                ->color('gray')
                 ->visible(fn () => auth()->user()?->hasRole('admin')),
         ];
     }

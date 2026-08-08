@@ -53,7 +53,8 @@ class TicketPolicy
         }
 
         if ($user->hasRole('it_support')) {
-            return $ticket->support_id === null || $ticket->support_id === $user->support?->id;
+            return ($ticket->support_id === null || $ticket->support_id === $user->support?->id)
+                && in_array($ticket->status, ['open', 'in_progress']);
         }
 
         if ($user->hasRole('pegawai')) {

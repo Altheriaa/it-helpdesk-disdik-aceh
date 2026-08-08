@@ -298,6 +298,7 @@
             flex-direction: column;
             gap: 0.5rem;
             transition: all 0.15s ease;
+            cursor: pointer;
         }
 
         .dark .bay-ticket-card {
@@ -306,9 +307,11 @@
         }
 
         .bay-ticket-card:hover {
-            border-color: #cbd5e1;
-            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
+            border-color: #94a3b8;
+        }
+
+        .bay-ticket-card:hover .bay-ticket-subject {
+            color: #2563eb;
         }
 
         .bay-ticket-top {
@@ -460,83 +463,106 @@
     <div class="bay-app" wire:poll.5s>
         <!-- ── Filter & Action Card ── -->
         <div class="bay-card">
-            <div class="bay-card-header">
-                <div class="bay-icon-box">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="bay-header-title">Filter Data Tiket</h2>
-                    <p class="bay-header-subtitle">Pilih rentang waktu dan kriteria untuk menampilkan data tiket helpdesk</p>
-                </div>
-            </div>
-
-            <div class="bay-filter-grid">
-                <!-- Search Box -->
-                <div class="bay-field">
-                    <label class="bay-label">Pencarian Tiket</label>
-                    <div class="bay-search-wrapper">
-                        <svg class="bay-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            @if(! $user?->hasRole('pegawai'))
+                <div class="bay-card-header">
+                    <div class="bay-icon-box">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                         </svg>
-                        <input type="text"
-                               wire:model.live.debounce.300ms="search"
-                               class="bay-input"
-                               placeholder="Cari berdasarkan subjek, ID, atau nama pegawai...">
+                    </div>
+                    <div>
+                        <h2 class="bay-header-title">Filter Data Tiket</h2>
+                        <p class="bay-header-subtitle">Pilih rentang waktu dan kriteria untuk menampilkan data tiket helpdesk</p>
                     </div>
                 </div>
 
-                <!-- Periode Filter -->
-                <div class="bay-field">
-                    <label class="bay-label">Pilih Periode</label>
-                    <select wire:model.live="periodFilter" class="bay-select">
-                        <option value="today">Hari Ini</option>
-                        <option value="week">7 Hari Terakhir</option>
-                        <option value="all">Semua Periode</option>
-                    </select>
-                </div>
+                <div class="bay-filter-grid">
+                    <!-- Search Box -->
+                    <div class="bay-field">
+                        <label class="bay-label">Pencarian Tiket</label>
+                        <div class="bay-search-wrapper">
+                            <svg class="bay-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input type="text"
+                                   wire:model.live.debounce.300ms="search"
+                                   class="bay-input"
+                                   placeholder="Cari berdasarkan subjek, ID, atau nama pegawai...">
+                        </div>
+                    </div>
 
-                <!-- Prioritas Filter -->
-                <div class="bay-field">
-                    <label class="bay-label">Prioritas Tiket</label>
-                    <select wire:model.live="priorityFilter" class="bay-select">
-                        <option value="">Semua Prioritas</option>
-                        <option value="low">Rendah (Low)</option>
-                        <option value="medium">Sedang (Medium)</option>
-                        <option value="high">Tinggi (High)</option>
-                        <option value="critical">Kritis (Critical)</option>
-                    </select>
-                </div>
+                    <!-- Periode Filter -->
+                    <div class="bay-field">
+                        <label class="bay-label">Pilih Periode</label>
+                        <select wire:model.live="periodFilter" class="bay-select">
+                            <option value="today">Hari Ini</option>
+                            <option value="week">7 Hari Terakhir</option>
+                            <option value="all">Semua Periode</option>
+                        </select>
+                    </div>
 
-                <!-- Unit / Bidang Filter -->
-                <div class="bay-field">
-                    <label class="bay-label">Bidang / Unit Kerja</label>
-                    <select wire:model.live="divisionFilter" class="bay-select">
-                        <option value="">Semua Bidang</option>
-                        @foreach($this->divisions as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    <!-- Prioritas Filter -->
+                    <div class="bay-field">
+                        <label class="bay-label">Prioritas Tiket</label>
+                        <select wire:model.live="priorityFilter" class="bay-select">
+                            <option value="">Semua Prioritas</option>
+                            <option value="low">Rendah (Low)</option>
+                            <option value="medium">Sedang (Medium)</option>
+                            <option value="high">Tinggi (High)</option>
+                            <option value="critical">Kritis (Critical)</option>
+                        </select>
+                    </div>
 
-                <!-- View Mode Switch -->
-                <div class="bay-field">
-                    <label class="bay-label">Tampilan</label>
-                    <div class="bay-view-switch">
-                        <button type="button"
-                                wire:click="setMode('kanban')"
-                                class="bay-switch-btn {{ $viewMode === 'kanban' ? 'active' : '' }}">
-                            Kanban
-                        </button>
-                        <button type="button"
-                                wire:click="setMode('table')"
-                                class="bay-switch-btn {{ $viewMode === 'table' ? 'active' : '' }}">
-                            Tabel
-                        </button>
+                    <!-- Unit / Bidang Filter -->
+                    <div class="bay-field">
+                        <label class="bay-label">Bidang / Unit Kerja</label>
+                        <select wire:model.live="divisionFilter" class="bay-select">
+                            <option value="">Semua Bidang</option>
+                            @foreach($this->divisions as $id => $name)
+                                <option value="{{ $id }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- View Mode Switch -->
+                    <div class="bay-field">
+                        <label class="bay-label">Tampilan</label>
+                        <div class="bay-view-switch">
+                            <button type="button"
+                                    wire:click="setMode('kanban')"
+                                    class="bay-switch-btn {{ $viewMode === 'kanban' ? 'active' : '' }}">
+                                Kanban
+                            </button>
+                            <button type="button"
+                                    wire:click="setMode('table')"
+                                    class="bay-switch-btn {{ $viewMode === 'table' ? 'active' : '' }}">
+                                Tabel
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @else
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h2 class="bay-header-title">Tiket Saya</h2>
+                        <p class="bay-header-subtitle">Daftar seluruh tiket pengaduan yang Anda ajukan</p>
+                    </div>
+                    <div style="width: auto; min-width: 200px;">
+                        <div class="bay-view-switch">
+                            <button type="button"
+                                    wire:click="setMode('kanban')"
+                                    class="bay-switch-btn {{ $viewMode === 'kanban' ? 'active' : '' }}">
+                                Kanban
+                            </button>
+                            <button type="button"
+                                    wire:click="setMode('table')"
+                                    class="bay-switch-btn {{ $viewMode === 'table' ? 'active' : '' }}">
+                                Tabel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- ── Kanban View ── -->
@@ -557,17 +583,17 @@
                             $pc = $priorityColor[$ticket->priority] ?? '#64748b';
                             $pb = $priorityBg[$ticket->priority] ?? '#f8fafc';
                         @endphp
-                        <div class="bay-ticket-card">
+                        <div class="bay-ticket-card" onclick="window.location.href='{{ route('filament.admin.resources.tickets.view', $ticket) }}'">
                             <div class="bay-ticket-top">
                                 <span class="bay-priority-tag" style="color: {{ $pc }}; background: {{ $pb }};">
                                     {{ strtoupper($ticket->priority) }}
                                 </span>
-                                <span class="bay-ticket-id">#{{ $ticket->id }}</span>
+                                <span class="bay-ticket-id">#{{ $ticket->ticket_number }}</span>
                             </div>
 
-                            <a href="{{ route('filament.admin.resources.tickets.view', $ticket) }}" class="bay-ticket-subject">
+                            <div class="bay-ticket-subject">
                                 {{ $ticket->subject }}
-                            </a>
+                            </div>
 
                             <div class="bay-ticket-info">
                                 <div class="bay-info-item">
@@ -592,20 +618,23 @@
 
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     @if($user?->hasRole('it_support') && !$ticket->support_id)
-                                        <button type="button" wire:click="assignToMe({{ $ticket->id }})" class="bay-action-assign">
+                                        <button type="button" wire:click="assignToMe({{ $ticket->id }})" onclick="event.stopPropagation();" class="bay-action-assign">
                                             Assign ke Saya
                                         </button>
                                     @endif
                                     @if($user?->hasAnyRole(['admin', 'it_support']))
-                                        <button type="button" wire:click="moveStatus({{ $ticket->id }}, 'in_progress')" class="bay-action-link">
+                                        <button type="button" wire:click="moveStatus({{ $ticket->id }}, 'in_progress')" onclick="event.stopPropagation();" class="bay-action-link">
                                             Kerjakan →
                                         </button>
                                     @endif
+                                    <span class="bay-action-link" style="color: #64748b;">
+                                        Detail →
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="bay-empty-state">Tidak ada tiket baru pada periode ini.</div>
+                        <div class="bay-empty-state">{{ $user?->hasRole('pegawai') ? 'Belum ada tiket baru.' : 'Tidak ada tiket baru pada periode ini.' }}</div>
                     @endforelse
                 </div>
 
@@ -623,17 +652,17 @@
                             $pc = $priorityColor[$ticket->priority] ?? '#64748b';
                             $pb = $priorityBg[$ticket->priority] ?? '#f8fafc';
                         @endphp
-                        <div class="bay-ticket-card">
+                        <div class="bay-ticket-card" onclick="window.location.href='{{ route('filament.admin.resources.tickets.view', $ticket) }}'">
                             <div class="bay-ticket-top">
                                 <span class="bay-priority-tag" style="color: {{ $pc }}; background: {{ $pb }};">
                                     {{ strtoupper($ticket->priority) }}
                                 </span>
-                                <span class="bay-ticket-id">#{{ $ticket->id }}</span>
+                                <span class="bay-ticket-id">#{{ $ticket->ticket_number }}</span>
                             </div>
 
-                            <a href="{{ route('filament.admin.resources.tickets.view', $ticket) }}" class="bay-ticket-subject">
+                            <div class="bay-ticket-subject">
                                 {{ $ticket->subject }}
-                            </a>
+                            </div>
 
                             <div class="bay-ticket-info">
                                 <div class="bay-info-item">
@@ -658,15 +687,18 @@
 
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     @if($user?->hasRole('it_support') && (!$ticket->support_id || $ticket->support_id !== $user->support?->id))
-                                        <button type="button" wire:click="assignToMe({{ $ticket->id }})" class="bay-action-assign">
+                                        <button type="button" wire:click="assignToMe({{ $ticket->id }})" onclick="event.stopPropagation();" class="bay-action-assign">
                                             Assign ke Saya
                                         </button>
                                     @endif
                                     @if($user?->hasAnyRole(['admin', 'it_support']))
-                                        <button type="button" wire:click="moveStatus({{ $ticket->id }}, 'resolved')" class="bay-action-assign">
+                                        <button type="button" wire:click="moveStatus({{ $ticket->id }}, 'resolved')" onclick="event.stopPropagation();" class="bay-action-assign">
                                             Selesaikan ✓
                                         </button>
                                     @endif
+                                    <span class="bay-action-link" style="color: #64748b;">
+                                        Detail →
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -689,7 +721,7 @@
                             $pc = $priorityColor[$ticket->priority] ?? '#64748b';
                             $pb = $priorityBg[$ticket->priority] ?? '#f8fafc';
                         @endphp
-                        <div class="bay-ticket-card" style="opacity: 0.9;">
+                        <div class="bay-ticket-card" style="opacity: 0.95;" onclick="window.location.href='{{ route('filament.admin.resources.tickets.view', $ticket) }}'">
                             <div class="bay-ticket-top">
                                 <span class="bay-priority-tag" style="color: {{ $pc }}; background: {{ $pb }};">
                                     {{ strtoupper($ticket->priority) }}
@@ -697,9 +729,9 @@
                                 <span style="font-size: 0.75rem; font-weight: 700; color: #059669;">✓ Selesai</span>
                             </div>
 
-                            <a href="{{ route('filament.admin.resources.tickets.view', $ticket) }}" class="bay-ticket-subject">
+                            <div class="bay-ticket-subject">
                                 {{ $ticket->subject }}
-                            </a>
+                            </div>
 
                             <div class="bay-ticket-info">
                                 <div class="bay-info-item">
@@ -722,9 +754,9 @@
                                     <span class="bay-user-name">{{ $ticket->client->user->name ?? 'Pegawai' }}</span>
                                 </div>
 
-                                <a href="{{ route('filament.admin.resources.tickets.view', $ticket) }}" class="bay-action-link" style="color: #64748b;">
+                                <span class="bay-action-link" style="color: #64748b;">
                                     Detail →
-                                </a>
+                                </span>
                             </div>
                         </div>
                     @empty

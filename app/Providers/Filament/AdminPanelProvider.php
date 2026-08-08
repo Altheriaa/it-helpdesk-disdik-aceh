@@ -45,6 +45,98 @@ class AdminPanelProvider extends PanelProvider
                 'Laporan',
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                'panels::head.end',
+                fn () => new HtmlString('
+                    <style>
+                        @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+                        /* ── Custom Professional Header & Filament Buttons ── */
+                        .fi-ac-action-btn, .fi-btn {
+                            font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif !important;
+                            font-weight: 600 !important;
+                            border-radius: 0.625rem !important;
+                            transition: all 0.15s ease !important;
+                            letter-spacing: -0.01em !important;
+                        }
+
+                        /* Primary Action (e.g. Assign IT Support) */
+                        .fi-ac-action-btn[data-color="primary"],
+                        .fi-btn-color-primary {
+                            background-color: #004799 !important;
+                            color: #ffffff !important;
+                            border: 1px solid #00387a !important;
+                            box-shadow: 0 1px 3px rgba(0, 71, 153, 0.2) !important;
+                        }
+                        .fi-ac-action-btn[data-color="primary"]:hover,
+                        .fi-btn-color-primary:hover {
+                            background-color: #003370 !important;
+                        }
+
+                        /* Warning Action (e.g. Ubah Status) */
+                        .fi-ac-action-btn[data-color="warning"],
+                        .fi-btn-color-warning {
+                            background-color: #fffbeb !important;
+                            color: #b45309 !important;
+                            border: 1px solid #fde68a !important;
+                            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+                        }
+                        .fi-ac-action-btn[data-color="warning"]:hover,
+                        .fi-btn-color-warning:hover {
+                            background-color: #fef3c7 !important;
+                            color: #92400e !important;
+                        }
+
+                        /* Success Action (e.g. Assign ke Saya) */
+                        .fi-ac-action-btn[data-color="success"],
+                        .fi-btn-color-success {
+                            background-color: #ecfdf5 !important;
+                            color: #047857 !important;
+                            border: 1px solid #a7f3d0 !important;
+                            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+                        }
+                        .fi-ac-action-btn[data-color="success"]:hover,
+                        .fi-btn-color-success:hover {
+                            background-color: #d1fae5 !important;
+                            color: #065f46 !important;
+                        }
+
+                        /* Edit / Gray / Neutral Action */
+                        .fi-ac-action-btn[data-color="gray"],
+                        .fi-btn-color-gray {
+                            background-color: #ffffff !important;
+                            color: #334155 !important;
+                            border: 1px solid #cbd5e1 !important;
+                            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+                        }
+                        .fi-ac-action-btn[data-color="gray"]:hover,
+                        .fi-btn-color-gray:hover {
+                            background-color: #f8fafc !important;
+                            color: #0f172a !important;
+                            border-color: #94a3b8 !important;
+                        }
+
+                        /* Dark Mode Overrides */
+                        .dark .fi-ac-action-btn[data-color="warning"],
+                        .dark .fi-btn-color-warning {
+                            background-color: #78350f !important;
+                            color: #fef3c7 !important;
+                            border-color: #92400e !important;
+                        }
+                        .dark .fi-ac-action-btn[data-color="gray"],
+                        .dark .fi-btn-color-gray {
+                            background-color: #0f172a !important;
+                            color: #cbd5e1 !important;
+                            border-color: #334155 !important;
+                        }
+                        .dark .fi-ac-action-btn[data-color="gray"]:hover,
+                        .dark .fi-btn-color-gray:hover {
+                            background-color: #1e293b !important;
+                            color: #f8fafc !important;
+                        }
+                    </style>
+                ')
+            )
             ->databaseNotifications()
             ->databaseNotificationsPolling('5s')
             ->middleware([

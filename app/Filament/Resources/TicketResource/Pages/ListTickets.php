@@ -43,6 +43,16 @@ class ListTickets extends ListRecords
 
         $user = auth()->user();
 
+        if (in_array($ticket->status, ['resolved', 'closed']) && $newStatus === 'in_progress' && ! $user?->hasRole('admin')) {
+            Notification::make()
+                ->title('Akses Ditolak')
+                ->body('Hanya Admin yang dapat membuka kembali (re-open) tiket yang sudah selesai.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         // Update status and support_id if moving to in_progress
         $data = ['status' => $newStatus];
         if ($newStatus === 'in_progress' && $user?->hasRole('it_support') && ! $ticket->support_id) {
@@ -87,9 +97,11 @@ class ListTickets extends ListRecords
 
     public function getKanbanTickets(): array
     {
+        $user = auth()->user();
+        $isPegawai = $user?->hasRole('pegawai');
         $maxId = TicketResource::getEloquentQuery()->max('id') ?? 0;
 
-        if ($this->lastTicketId !== null && $maxId > $this->lastTicketId) {
+        if (! $isPegawai && $this->lastTicketId !== null && $maxId > $this->lastTicketId) {
             $newTickets = TicketResource::getEloquentQuery()
                 ->with(['client.user'])
                 ->where('id', '>', $this->lastTicketId)
@@ -117,26 +129,28 @@ class ListTickets extends ListRecords
         $query = TicketResource::getEloquentQuery()
             ->with(['client.user', 'client.division', 'support.user']);
 
-        if (filled($this->search)) {
-            $query->where(function (Builder $q) {
-                $q->where('subject', 'like', '%'.$this->search.'%')
-                    ->orWhere('id', 'like', '%'.$this->search.'%')
-                    ->orWhereHas('client.user', fn (Builder $uq) => $uq->where('name', 'like', '%'.$this->search.'%'));
-            });
-        }
+        if (! $isPegawai) {
+            if (filled($this->search)) {
+                $query->where(function (Builder $q) {
+                    $q->where('subject', 'like', '%'.$this->search.'%')
+                        ->orWhere('id', 'like', '%'.$this->search.'%')
+                        ->orWhereHas('client.user', fn (Builder $uq) => $uq->where('name', 'like', '%'.$this->search.'%'));
+                });
+            }
 
-        if (filled($this->priorityFilter)) {
-            $query->where('priority', $this->priorityFilter);
-        }
+            if (filled($this->priorityFilter)) {
+                $query->where('priority', $this->priorityFilter);
+            }
 
-        if (filled($this->divisionFilter)) {
-            $query->whereHas('client', fn (Builder $q) => $q->where('division_id', $this->divisionFilter));
-        }
+            if (filled($this->divisionFilter)) {
+                $query->whereHas('client', fn (Builder $q) => $q->where('division_id', $this->divisionFilter));
+            }
 
-        if ($this->periodFilter === 'today') {
-            $query->whereDate('created_at', Carbon::today());
-        } elseif ($this->periodFilter === 'week') {
-            $query->where('created_at', '>=', Carbon::now()->subDays(7));
+            if ($this->periodFilter === 'today') {
+                $query->whereDate('created_at', Carbon::today());
+            } elseif ($this->periodFilter === 'week') {
+                $query->where('created_at', '>=', Carbon::now()->subDays(7));
+            }
         }
 
         $allTickets = $query->latest()->get();

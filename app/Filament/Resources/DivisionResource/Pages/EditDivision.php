@@ -10,6 +10,8 @@ class EditDivision extends EditRecord
 {
     protected static string $resource = DivisionResource::class;
 
+    protected string $view = 'filament.resources.division-resource.pages.edit-division';
+
     protected function getHeaderActions(): array
     {
         return [

@@ -494,7 +494,7 @@
                 <div class="bay-detail-grid">
                     <div class="bay-detail-item">
                         <span class="bay-detail-label">No. Tiket</span>
-                        <span class="bay-detail-val">#{{ $ticket->id }}</span>
+                        <span class="bay-detail-val">#{{ $ticket->ticket_number }}</span>
                     </div>
 
                     <div class="bay-detail-item">
@@ -530,7 +530,7 @@
                         <span class="bay-detail-label">Status</span>
                         <div style="display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap;">
                             <span class="bay-detail-val">{{ $statusLabel[$ticket->status] ?? ucfirst($ticket->status) }}</span>
-                            @if($user?->hasAnyRole(['admin', 'it_support']))
+                            @if($user?->hasRole('admin') || ($user?->hasRole('it_support') && in_array($ticket->status, ['open', 'in_progress'])))
                                 <button type="button" wire:click="mountAction('changeStatus')" class="bay-btn-inline-action" style="background: #fff7ed; color: #ea580c; border-color: #ffedd5;">
                                     Ubah
                                 </button>
@@ -542,9 +542,13 @@
                         <span class="bay-detail-label">IT Support</span>
                         <div style="display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap;">
                             <span class="bay-detail-val">{{ $ticket->support->user->name ?? 'Belum diassign' }}</span>
-                            @if($user?->hasAnyRole(['admin', 'it_support']))
+                            @if($user?->hasRole('admin'))
                                 <button type="button" wire:click="mountAction('assignSupport')" class="bay-btn-inline-action">
                                     Assign
+                                </button>
+                            @elseif($user?->hasRole('it_support') && $ticket->support_id !== $user->support?->id && ! in_array($ticket->status, ['closed', 'cancelled']))
+                                <button type="button" wire:click="mountAction('assignToMe')" class="bay-btn-inline-action" style="background: #ecfdf5; color: #059669; border-color: #a7f3d0;">
+                                    Assign ke Saya
                                 </button>
                             @endif
                         </div>

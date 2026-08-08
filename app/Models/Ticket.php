@@ -30,6 +30,14 @@ class Ticket extends Model
         ];
     }
 
+    /**
+     * Get formatted ticket number with prefix (e.g. TCK-0001).
+     */
+    public function getTicketNumberAttribute(): string
+    {
+        return 'TCK-'.str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);
+    }
+
     protected static function booted(): void
     {
         static::updated(function (Ticket $ticket) {
@@ -48,7 +56,7 @@ class Ticket extends Model
                     };
 
                     Notification::make()
-                        ->title('Status Tiket #'.$ticket->id.' Diperbarui')
+                        ->title('Status Tiket #'.$ticket->ticket_number.' Diperbarui')
                         ->body('Status tiket Anda ("'.str($ticket->subject)->limit(35).'") kini diubah menjadi '.$statusText.'.')
                         ->icon('heroicon-o-arrow-path')
                         ->info()
@@ -69,7 +77,7 @@ class Ticket extends Model
                 if ($clientUser) {
                     Notification::make()
                         ->title('Tiket Ditangani Petugas IT')
-                        ->body('Tiket #'.$ticket->id.' Anda kini sedang ditangani oleh '.$supportName.'.')
+                        ->body('Tiket #'.$ticket->ticket_number.' Anda kini sedang ditangani oleh '.$supportName.'.')
                         ->icon('heroicon-o-user-check')
                         ->success()
                         ->actions([
